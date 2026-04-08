@@ -18,7 +18,17 @@ router.get('/crops', auth, roleCheck('farmer'), async (req, res) => {
 // POST /api/farmers/crops
 router.post('/crops', auth, roleCheck('farmer'), async (req, res) => {
   try {
-    const crop = await CropListing.create({ ...req.body, farmer: req.user._id });
+    const { cropType, quantity, unit, harvestDate, askingPrice, location, sellIntent } = req.body;
+    const crop = await CropListing.create({
+      cropType: String(cropType || '').trim(),
+      quantity: Number(quantity),
+      unit: String(unit || '').trim(),
+      harvestDate,
+      askingPrice: Number(askingPrice),
+      location: location ? String(location).trim() : undefined,
+      sellIntent: Boolean(sellIntent),
+      farmer: req.user._id,
+    });
     res.status(201).json(crop);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -28,9 +38,15 @@ router.post('/crops', auth, roleCheck('farmer'), async (req, res) => {
 // PUT /api/farmers/crops/:id
 router.put('/crops/:id', auth, roleCheck('farmer'), async (req, res) => {
   try {
+    const { quantity, askingPrice, status, sellIntent } = req.body;
+    const updateFields = {};
+    if (quantity !== undefined) updateFields.quantity = Number(quantity);
+    if (askingPrice !== undefined) updateFields.askingPrice = Number(askingPrice);
+    if (status !== undefined) updateFields.status = String(status);
+    if (sellIntent !== undefined) updateFields.sellIntent = Boolean(sellIntent);
     const crop = await CropListing.findOneAndUpdate(
       { _id: req.params.id, farmer: req.user._id },
-      req.body,
+      updateFields,
       { new: true }
     );
     if (!crop) return res.status(404).json({ message: 'Crop listing not found' });

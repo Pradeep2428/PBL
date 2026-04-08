@@ -4,11 +4,15 @@ const MarketData = require('../models/MarketData');
 
 const COMMODITIES = ['Cumin', 'Turmeric', 'Coriander', 'Dehydrated Onion', 'Black Pepper', 'Fenugreek'];
 
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // GET /api/market/commodity-trends
 router.get('/commodity-trends', async (req, res) => {
   try {
     const { commodity } = req.query;
-    const filter = commodity ? { commodity: new RegExp(commodity, 'i') } : {};
+    const filter = commodity ? { commodity: new RegExp(escapeRegex(commodity), 'i') } : {};
     const data = await MarketData.find(filter).sort({ date: -1 }).limit(200);
 
     if (data.length === 0) {

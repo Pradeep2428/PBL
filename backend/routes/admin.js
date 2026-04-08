@@ -93,8 +93,9 @@ router.get('/shipments', auth, roleCheck('admin', 'superadmin'), async (req, res
 // POST /api/admin/shipments
 router.post('/shipments', auth, roleCheck('admin', 'superadmin'), async (req, res) => {
   try {
-    const shipment = await Shipment.create(req.body);
-    await Order.findByIdAndUpdate(req.body.order, { status: 'shipped' });
+    const { order, containerNo, vessel, origin, destination, estimatedArrival } = req.body;
+    const shipment = await Shipment.create({ order, containerNo, vessel, origin, destination, estimatedArrival });
+    await Order.findByIdAndUpdate(order, { status: 'shipped' });
     res.status(201).json(shipment);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -105,16 +106,19 @@ router.post('/shipments', auth, roleCheck('admin', 'superadmin'), async (req, re
 router.put('/shipments/:id/update', auth, roleCheck('admin', 'superadmin'), async (req, res) => {
   try {
     const { status, location, description } = req.body;
+    const safeStatus = String(status || '').trim();
+    const safeLocation = location ? String(location).trim() : undefined;
+    const safeDescription = description ? String(description).trim() : undefined;
     const shipment = await Shipment.findByIdAndUpdate(
       req.params.id,
       {
-        status,
-        $push: { updates: { status, location, description, timestamp: new Date() } },
+        status: safeStatus,
+        $push: { updates: { status: safeStatus, location: safeLocation, description: safeDescription, timestamp: new Date() } },
       },
       { new: true }
     );
     if (!shipment) return res.status(404).json({ message: 'Shipment not found' });
-    if (status === 'delivered') {
+    if (safeStatus === 'delivered') {
       await Order.findByIdAndUpdate(shipment.order, { status: 'delivered' });
     }
     res.json(shipment);

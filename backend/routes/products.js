@@ -4,14 +4,18 @@ const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 const roleCheck = require('../middleware/roleCheck');
 
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // GET /api/products
 router.get('/', async (req, res) => {
   try {
     const { category, minPrice, maxPrice, origin, search } = req.query;
     const filter = { isActive: true };
-    if (category) filter.category = category;
-    if (origin) filter.origin = new RegExp(origin, 'i');
-    if (search) filter.name = new RegExp(search, 'i');
+    if (category) filter.category = String(category);
+    if (origin) filter.origin = new RegExp(escapeRegex(origin), 'i');
+    if (search) filter.name = new RegExp(escapeRegex(search), 'i');
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = Number(minPrice);
